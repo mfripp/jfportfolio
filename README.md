@@ -30,7 +30,7 @@ Here's a short (imperfect) explanation on how to use `Art Gallery`:
 4. Replace all instances of `[your email]` with your email address.
 5. Replace the `[your inspiring bio]` with a cool bio to describe yourself to the world.
 6. Replace `[your username]` with your username for Facebook, Twitter and Instagram.
-7. Place an avatar / profile picture and some pictures of your art inside of the [assest](assets/) folder.
+7. Place an avatar / profile picture and some pictures of your art inside of the [assets](assets/) folder.
 8. Look for the `image-card` class and replace all the src url's in the `img` tags to your files.
 9. Search for `alt="avatar"` and replace the src url with your own avatar.
 10. Open [index.html](index.html) in your browser of choice and see the results.
