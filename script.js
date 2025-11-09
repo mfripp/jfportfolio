@@ -1,11 +1,10 @@
-// === THEME (unchanged) ===
 var toggleTheme = function () {
   document.body.classList.toggle('dark');
   localStorage.setItem('dark-theme', document.body.classList.contains('dark'));
 };
 
-// === GALLERY ENHANCEMENTS ===
 (function () {
+  const isTouch = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
   const gallery = document.getElementById('works');
   if (!gallery) return;
 
@@ -63,11 +62,23 @@ var toggleTheme = function () {
   function applyZoom() {
     const img = currentImageEl();
     if (!img) return;
-    // Scale around the center; keep it simple and reversible
+
+    // On touch devices, let the browser handle pinch zoom; don't transform.
+    if (isTouch) {
+      img.style.transform = '';
+      img.style.transformOrigin = '';
+      const inner = getInnerContainerFromTarget(img);
+      if (inner) {
+        inner.style.overflow = '';
+        inner.style.cursor = '';
+      }
+      return;
+    }
+
+    // Desktop: keep JS zoom
     img.style.transformOrigin = 'center center';
     img.style.transform = `scale(${zoom})`;
     img.style.transition = 'transform 120ms ease';
-    // Prevent layout shifts by containing the image
     const inner = getInnerContainerFromTarget(img);
     if (inner) {
       inner.style.overflow = zoom > 1 ? 'auto' : '';
@@ -140,30 +151,29 @@ var toggleTheme = function () {
     // Prev / Next (desktop)
     const prevBtn = mkBtn('←', 'Previous (←)', prevImage);
     const nextBtn = mkBtn('→', 'Next (→)', nextImage);
-
-    // Zoom controls (desktop)
-    const zoomInBtn = mkBtn('+', 'Zoom in (+)', () => { zoom = Math.min(zoom * 1.25, 8); applyZoom(); });
-    const zoomOutBtn = mkBtn('−', 'Zoom out (−)', () => { zoom = Math.max(zoom / 1.25, 1); applyZoom(); });
-    const zoomResetBtn = mkBtn('⤾', 'Reset zoom (0)', () => { zoom = 1; applyZoom(); });
-
-    // Close
     const closeBtn = mkBtn('✕', 'Close (Esc)', closeLightroom);
 
-    leftCol.appendChild(prevBtn);
-
-    // Right column: zoom controls stacked above next/close
-    const zoomRow = document.createElement('div');
-    zoomRow.style.display = 'flex';
-    zoomRow.appendChild(zoomOutBtn);
-    zoomRow.appendChild(zoomResetBtn);
-    zoomRow.appendChild(zoomInBtn);
+    // Zoom controls (desktop only)
+    let zoomRow = null;
+    if (!isTouch) {
+      const zoomInBtn = mkBtn('+', 'Zoom in (+)', () => { zoom = Math.min(zoom * 1.25, 8); applyZoom(); });
+      const zoomOutBtn = mkBtn('−', 'Zoom out (−)', () => { zoom = Math.max(zoom / 1.25, 1); applyZoom(); });
+      // const zoomResetBtn = mkBtn('⤾', 'Reset zoom (0)', () => { zoom = 1; applyZoom(); });
+      // Right column: zoom controls stacked above next/close
+      const zoomRow = document.createElement('div');
+      zoomRow.style.display = 'flex';
+      zoomRow.appendChild(zoomOutBtn);
+      zoomRow.appendChild(zoomResetBtn);
+      zoomRow.appendChild(zoomInBtn);
+    }
 
     const navRow = document.createElement('div');
     navRow.style.display = 'flex';
     navRow.appendChild(nextBtn);
     navRow.appendChild(closeBtn);
 
-    rightCol.appendChild(zoomRow);
+    leftCol.appendChild(prevBtn);
+    if (zoomRow) rightCol.appendChild(zoomRow);
     rightCol.appendChild(navRow);
 
     uiRoot.appendChild(leftCol);
@@ -205,31 +215,33 @@ var toggleTheme = function () {
     if (e.key === 'Escape') { e.preventDefault(); closeLightroom(); return; }
     if (e.key === 'ArrowRight') { e.preventDefault(); nextImage(); return; }
     if (e.key === 'ArrowLeft') { e.preventDefault(); prevImage(); return; }
+    if (isTouch) return; // no keyboard zoom on touch devices
     if (e.key === '+') { e.preventDefault(); zoom = Math.min(zoom * 1.25, 8); applyZoom(); return; }
     if (e.key === '-') { e.preventDefault(); zoom = Math.max(zoom / 1.25, 1); applyZoom(); return; }
     if (e.key === '0') { e.preventDefault(); zoom = 1; applyZoom(); return; }
   }
 
   // === SWIPE (mobile) ===
-  let touchStartX = null, touchStartY = null, touchTime = 0;
+  let touchStartX = null, touchStartY = null, touchTime = 0, pinchActive = false;
+
   function onTouchStart(e) {
     if (!isOpen()) return;
+    if (e.touches && e.touches.length > 1) { pinchActive = true; return; }
     const t = e.changedTouches && e.changedTouches[0];
     if (!t) return;
     touchStartX = t.clientX; touchStartY = t.clientY; touchTime = Date.now();
   }
+
   function onTouchEnd(e) {
     if (!isOpen()) return;
+    if (pinchActive) { pinchActive = false; return; }
     const t = e.changedTouches && e.changedTouches[0];
     if (!t) return;
     const dx = t.clientX - touchStartX;
     const dy = t.clientY - touchStartY;
     const dt = Date.now() - touchTime;
     const isSwipe = Math.abs(dx) > 40 && Math.abs(dy) < 60 && dt < 600;
-    if (isSwipe) {
-      if (dx < 0) nextImage();
-      else prevImage();
-    }
+    if (isSwipe) { if (dx < 0) nextImage(); else prevImage(); }
   }
 
   // Wire up

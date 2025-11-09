@@ -78,8 +78,20 @@ nav {
   cursor: zoom-out;
   /* smoother zoom */
   will-change: transform;
-  /* allow panning while zoomed on mobile */
-  touch-action: pan-x pan-y;
+}
+
+@media (pointer: coarse) {
+
+  /* allow native pinch/scroll */
+  .lightroom img {
+    touch-action: auto;
+  }
+
+  /* ensure zoom UI hidden on touch */
+  #lr-ui .zoom-controls {
+    display: none;
+  }
+
 }
 
 
