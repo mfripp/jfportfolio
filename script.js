@@ -202,12 +202,57 @@ var toggleTheme = function () {
       const idx = imgs.indexOf(clickedImg);
       if (idx !== -1) openAtIndex(idx);
     } else {
-      // NEW: clicking the enlarged image closes; clicking background also closes
       if (event.target.tagName === 'IMG' || event.target === inner) {
         closeLightroom();
       }
     }
   }
+  function onGalleryClickVideo(e) {
+    const link = e.target.closest && e.target.closest('.media-link[data-kind="video"]');
+    if (!link) return;
+    e.preventDefault();
+
+    // Close any open image enlargement
+    closeLightroom();
+
+    // Create a simple full-viewport overlay for the video
+    const ov = document.createElement('div');
+    ov.id = 'video-overlay';
+    Object.assign(ov.style, {
+      position: 'fixed', inset: '0', background: 'rgba(0,0,0,.9)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1002
+    });
+
+    const vid = document.createElement('video');
+    vid.controls = true;
+    vid.autoplay = true;
+    vid.style.maxWidth = '90vw';
+    vid.style.maxHeight = '90vh';
+
+    // Provide both sources if you created WebM too
+    const srcMp4 = document.createElement('source');
+    srcMp4.src = link.getAttribute('href');
+    srcMp4.type = 'video/mp4';
+    vid.appendChild(srcMp4);
+
+    // Optional webm fallback:
+    // const srcWebm = document.createElement('source');
+    // srcWebm.src = link.getAttribute('href').replace(/\.mp4$/, '.webm');
+    // srcWebm.type = 'video/webm';
+    // vid.appendChild(srcWebm);
+
+    ov.appendChild(vid);
+
+    // Click outside video or press Esc to close
+    ov.addEventListener('click', (ev) => { if (ev.target === ov) document.body.removeChild(ov); });
+    document.addEventListener('keydown', function onEsc(ev) {
+      if (ev.key === 'Escape') { document.removeChild(ov); document.removeEventListener('keydown', onEsc); }
+    });
+
+    document.body.appendChild(ov);
+  };
+
+
 
   // === KEYBOARD: Esc, arrows, + / - / 0 ===
   function onKeydown(e) {
@@ -246,6 +291,9 @@ var toggleTheme = function () {
 
   // Wire up
   gallery.addEventListener('click', onGalleryClick);
+  // optional embedded video display, but it makes it hard to go back to
+  // main page (have to click outside the video)
+  // gallery.addEventListener('click', onGalleryClickVideo);
   document.addEventListener('keydown', onKeydown, { passive: false });
   document.addEventListener('touchstart', onTouchStart, { passive: true });
   document.addEventListener('touchend', onTouchEnd, { passive: true });
