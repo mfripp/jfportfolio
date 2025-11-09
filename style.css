@@ -250,3 +250,14 @@ nav {
   /* smoother zoom */
   will-change: transform;
 }
+
+.theme-btn:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.theme-btn:focus-visible {
+  /* visible focus for keyboard users */
+  outline: 2px solid #aaa;
+  outline-offset: 2px;
+}
